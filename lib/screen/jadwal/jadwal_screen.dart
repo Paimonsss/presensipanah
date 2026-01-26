@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:panah_presensi/screen/dashboard/dashboard_screen.dart';
 import 'package:panah_presensi/screen/absensi/absensi_screen.dart';
 import 'package:panah_presensi/screen/profil/profil_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class JadwalScreen extends StatefulWidget {
   const JadwalScreen({super.key});
@@ -11,8 +12,40 @@ class JadwalScreen extends StatefulWidget {
 }
 
 class _JadwalScreenState extends State<JadwalScreen> {
-  int _selectedIndex =
-      0; // Default to Dashboard since Jadwal is accessed from menu
+  int _selectedIndex = 0;
+  List<Map<String, dynamic>> jadwalList = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchJadwal();
+  }
+
+  Future<void> _fetchJadwal() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await Supabase.instance.client
+          .from('jadwal')
+          .select('*')
+          .order('date', ascending: true);
+
+      if (mounted) {
+        setState(() {
+          jadwalList = List<Map<String, dynamic>>.from(response);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal memuat jadwal: $e")));
+      }
+    }
+  }
 
   void _onItemTapped(int index) {
     if (index == 0) {
@@ -33,18 +66,70 @@ class _JadwalScreenState extends State<JadwalScreen> {
     }
   }
 
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return "-";
+    try {
+      final date = DateTime.parse(dateStr);
+      const days = [
+        'Minggu',
+        'Senin',
+        'Selasa',
+        'Rabu',
+        'Kamis',
+        'Jumat',
+        'Sabtu',
+      ];
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'Mei',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des',
+      ];
+      return "${days[date.weekday % 7]}, ${date.day} ${months[date.month - 1]} ${date.year}";
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  String _formatTime(String? startTime, String? endTime) {
+    if (startTime == null) return "-";
+    final start = startTime.substring(0, 5);
+    final end = endTime?.substring(0, 5) ?? "";
+    return end.isNotEmpty ? "$start - $end" : start;
+  }
+
+  Color _getTypeColor(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'pertandingan':
+        return Colors.blue;
+      case 'meeting':
+        return Colors.purple;
+      default:
+        return Colors.red;
+    }
+  }
+
+  IconData _getTypeIcon(String? type) {
+    switch (type?.toLowerCase()) {
+      case 'pertandingan':
+        return Icons.emoji_events;
+      case 'meeting':
+        return Icons.groups;
+      default:
+        return Icons.sports;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, String>> jadwal = [
-      {"hari": "Senin", "jam": "16:00 - 18:00", "kegiatan": "Latihan Panahan"},
-      {"hari": "Rabu", "jam": "16:00 - 18:00", "kegiatan": "Latihan Fisik"},
-      {
-        "hari": "Sabtu",
-        "jam": "08:00 - 11:00",
-        "kegiatan": "Pertandingan Internal"
-      },
-    ];
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
@@ -61,7 +146,11 @@ class _JadwalScreenState extends State<JadwalScreen> {
                 ),
               ),
               padding: const EdgeInsets.only(
-                  top: 40, bottom: 40, left: 20, right: 20),
+                top: 40,
+                bottom: 40,
+                left: 20,
+                right: 20,
+              ),
               child: Row(
                 children: [
                   // Tombol Back
@@ -70,11 +159,15 @@ class _JadwalScreenState extends State<JadwalScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const DashboardScreen()),
+                          builder: (context) => const DashboardScreen(),
+                        ),
                       );
                     },
-                    child: const Icon(Icons.arrow_back,
-                        color: Colors.white, size: 28),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
@@ -90,7 +183,15 @@ class _JadwalScreenState extends State<JadwalScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 44), // biar teks tetap center
+                  // Refresh button
+                  InkWell(
+                    onTap: _fetchJadwal,
+                    child: const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -99,71 +200,165 @@ class _JadwalScreenState extends State<JadwalScreen> {
 
             // ===== LIST JADWAL =====
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: jadwal.length,
-                itemBuilder: (context, index) {
-                  final item = jadwal[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.schedule, color: Colors.red, size: 28),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item["hari"] ?? "-",
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                              Text(
-                                item["kegiatan"] ?? "-",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[700],
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                              Text(
-                                item["jam"] ?? "-",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                            ],
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.red),
+                    )
+                  : jadwalList.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: 64,
+                            color: Colors.grey[400],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          Text(
+                            "Belum ada jadwal",
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _fetchJadwal,
+                      color: Colors.red,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: jadwalList.length,
+                        itemBuilder: (context, index) {
+                          final item = jadwalList[index];
+                          final type = item['type'] ?? 'Latihan';
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: _getTypeColor(type).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    _getTypeIcon(type),
+                                    color: _getTypeColor(type),
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              item["title"] ?? "-",
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                fontFamily: 'Poppins',
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _getTypeColor(
+                                                type,
+                                              ).withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              type,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                fontFamily: 'Poppins',
+                                                color: _getTypeColor(type),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _formatDate(item["date"]),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[700],
+                                          fontFamily: 'Poppins',
+                                        ),
+                                      ),
+                                      Text(
+                                        _formatTime(
+                                          item["time_start"],
+                                          item["time_end"],
+                                        ),
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[600],
+                                          fontFamily: 'Poppins',
+                                        ),
+                                      ),
+                                      if (item["location"] != null)
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.location_on,
+                                              size: 14,
+                                              color: Colors.grey[500],
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              item["location"],
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[500],
+                                                fontFamily: 'Poppins',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),
       ),
 
-      // ===== NAV BOTTOM (KONSISTEN: Dashboard - Presensi - Profil) =====
+      // ===== NAV BOTTOM =====
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -182,7 +377,9 @@ class _JadwalScreenState extends State<JadwalScreen> {
           selectedItemColor: Colors.red,
           unselectedItemColor: Colors.grey,
           selectedLabelStyle: const TextStyle(
-              fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+          ),
           unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins'),
           items: [
             const BottomNavigationBarItem(

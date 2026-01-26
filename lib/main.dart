@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:panah_presensi/screen/dashboard/dashboard_screen.dart';
-import 'package:panah_presensi/screen/halaman1/halaman1_screen.dart';
-import 'package:panah_presensi/screen/halaman2/halaman2_screen.dart';
 import 'package:panah_presensi/screen/onboarding/onboarding_screen.dart';
 import 'package:panah_presensi/screen/splash%20screen/Splashscreen.dart';
 import 'package:panah_presensi/screen/welcome/welcome_screen.dart';
@@ -11,7 +9,8 @@ import 'package:http/http.dart';
 Future<void> main() async {
   await Supabase.initialize(
     url: 'https://clparjsshhnxjgvwujzx.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNscGFyanNzaGhueGpndnd1anp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyOTgsImV4cCI6MjA4MTUyMDI5OH0.Ud7OYgFGNiIP5sK_04uldvYASBb7KgOucCQkEnN_zQY',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNscGFyanNzaGhueGpndnd1anp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyOTgsImV4cCI6MjA4MTUyMDI5OH0.Ud7OYgFGNiIP5sK_04uldvYASBb7KgOucCQkEnN_zQY',
   );
 
   runApp(MyApp());
@@ -30,6 +29,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Panah Presensi',
       theme: ThemeData(
+        fontFamily: 'Poppins',
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
@@ -37,4 +37,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

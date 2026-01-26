@@ -92,7 +92,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
         'September',
         'Oktober',
         'November',
-        'Desember'
+        'Desember',
       ];
       return "${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}";
     } catch (e) {
@@ -117,9 +117,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal memilih foto: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal memilih foto: $e")));
       }
     }
   }
@@ -138,7 +138,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
       final bytes = await photo.readAsBytes();
 
       // Upload ke Supabase Storage
-      await Supabase.instance.client.storage.from('avatars').uploadBinary(
+      await Supabase.instance.client.storage
+          .from('avatars')
+          .uploadBinary(
             fileName,
             bytes,
             fileOptions: const FileOptions(upsert: true),
@@ -152,7 +154,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
       // Update tabel anggota
       await Supabase.instance.client
           .from('anggota')
-          .update({'photo_url': publicUrl}).eq('user_id', user.id);
+          .update({'photo_url': publicUrl})
+          .eq('user_id', user.id);
 
       setState(() {
         _photoUrl = publicUrl;
@@ -169,9 +172,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
     } catch (e) {
       debugPrint("Error uploading photo: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal upload foto: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal upload foto: $e")));
       }
     } finally {
       setState(() {
@@ -299,6 +302,102 @@ class _ProfilScreenState extends State<ProfilScreen> {
     );
   }
 
+  void _showEditProfileDialog() {
+    final TextEditingController namaController = TextEditingController(
+      text: _nama,
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          "Edit Profil",
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: namaController,
+              style: const TextStyle(fontFamily: 'Poppins'),
+              decoration: InputDecoration(
+                labelText: "Nama",
+                labelStyle: const TextStyle(fontFamily: 'Poppins'),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.red, width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "Batal",
+              style: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newNama = namaController.text.trim();
+              if (newNama.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Nama tidak boleh kosong")),
+                );
+                return;
+              }
+
+              Navigator.pop(context);
+
+              try {
+                final user = Supabase.instance.client.auth.currentUser;
+                if (user != null) {
+                  await Supabase.instance.client
+                      .from('anggota')
+                      .update({'nama': newNama})
+                      .eq('user_id', user.id);
+
+                  setState(() {
+                    _nama = newNama;
+                  });
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Nama berhasil diperbarui!"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Gagal update nama: $e")),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              "Simpan",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
 
@@ -362,11 +461,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(
-                      Icons.camera_alt,
-                      size: 16,
-                      color: Colors.white,
-                    ),
+                  : const Icon(Icons.camera_alt, size: 16, color: Colors.white),
             ),
           ),
         ),
@@ -441,7 +536,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         color: Colors.black.withOpacity(0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
-                      )
+                      ),
                     ],
                   ),
                   child: _isLoading
@@ -476,9 +571,15 @@ class _ProfilScreenState extends State<ProfilScreen> {
 
                             // Informasi tambahan
                             _buildInfoRow(
-                                Icons.email_outlined, "Email", _email),
-                            _buildInfoRow(Icons.calendar_today_outlined,
-                                "Tanggal Bergabung", _tanggalBergabung),
+                              Icons.email_outlined,
+                              "Email",
+                              _email,
+                            ),
+                            _buildInfoRow(
+                              Icons.calendar_today_outlined,
+                              "Tanggal Bergabung",
+                              _tanggalBergabung,
+                            ),
 
                             const SizedBox(height: 24),
 
@@ -492,8 +593,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                 ),
                                 onPressed: _isUploadingPhoto
                                     ? null
@@ -532,12 +634,11 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                 ),
-                                onPressed: () {
-                                  // aksi edit profil
-                                },
+                                onPressed: _showEditProfileDialog,
                                 child: const Text(
                                   "Edit Profil",
                                   style: TextStyle(
@@ -560,8 +661,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                 ),
                                 onPressed: _logout,
                                 child: const Text(
@@ -604,7 +706,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
           selectedItemColor: Colors.red,
           unselectedItemColor: Colors.grey,
           selectedLabelStyle: const TextStyle(
-              fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+          ),
           unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins'),
           items: [
             const BottomNavigationBarItem(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:panah_presensi/screen/absensi/absensi_screen.dart';
+import 'package:panah_presensi/screen/dashboard/dashboard_screen.dart';
 import 'package:panah_presensi/screen/register/register_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -35,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (authResponse.session != null) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AbsensiScreen()),
+          MaterialPageRoute(builder: (context) => DashboardScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,9 +83,78 @@ class _LoginScreenState extends State<LoginScreen> {
             ],
           ),
         );
+      } else if (e.code == 'invalid_credentials') {
+        // Email atau password salah
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            icon: const Icon(Icons.error_outline, size: 50, color: Colors.red),
+            title: const Text(
+              "Login Gagal",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: const Text(
+              "Email atau password salah. Silakan coba lagi.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontFamily: 'Poppins'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "OK",
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Login gagal: ${e.message}")),
+        // Error lainnya
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            icon: const Icon(Icons.warning_amber_rounded,
+                size: 50, color: Colors.orange),
+            title: const Text(
+              "Terjadi Kesalahan",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              e.message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontFamily: 'Poppins'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "OK",
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       }
     } catch (e) {
