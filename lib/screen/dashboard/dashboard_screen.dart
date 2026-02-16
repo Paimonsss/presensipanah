@@ -1,38 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:panah_presensi/screen/Riwayat%20absen/riwayat_absen.dart';
-import 'package:panah_presensi/screen/absensi/absensi_screen.dart';
-import 'package:panah_presensi/screen/profil/profil_screen.dart';
 import 'package:panah_presensi/screen/jadwal/jadwal_screen.dart';
+import 'package:panah_presensi/screen/main_screen.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
-
-  @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedIndex = 0; // Dashboard di posisi pertama
-
-  void _onItemTapped(int index) {
-    if (index == _selectedIndex) return;
-
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => AbsensiScreen()),
-      );
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => ProfilScreen()),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +27,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.only(top: 50, bottom: 25),
               child: Column(
                 children: [
-                  // Logo
                   Image.asset(
                     'assets/image/logo.png',
                     width: 70,
@@ -163,11 +134,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             title: "Profil Saya",
                             color: Colors.blue,
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => ProfilScreen()),
-                              );
+                              final mainState = context
+                                  .findAncestorStateOfType<MainScreenState>();
+                              mainState?.switchToTab(2);
                             },
                           ),
                         ),
@@ -213,11 +182,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             title: "Presensi",
                             color: Colors.red,
                             onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => AbsensiScreen()),
-                              );
+                              final mainState = context
+                                  .findAncestorStateOfType<MainScreenState>();
+                              mainState?.switchToTab(1);
                             },
                           ),
                         ),
@@ -280,57 +247,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-
-      // ===== BOTTOM NAVIGATION 3 TAB =====
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.red,
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(
-              fontFamily: 'Poppins', fontWeight: FontWeight.w600),
-          unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins'),
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Image.asset(
-                  'assets/image/logo.png',
-                  width: 28,
-                  height: 28,
-                ),
-              ),
-              label: 'Presensi',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
             ),
           ],
         ),

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:panah_presensi/screen/dashboard/dashboard_screen.dart';
-import 'package:panah_presensi/screen/profil/profil_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AbsensiScreen extends StatefulWidget {
@@ -9,8 +7,6 @@ class AbsensiScreen extends StatefulWidget {
 }
 
 class _AbsensiScreenState extends State<AbsensiScreen> {
-  int _selectedIndex = 1; // Presensi di tengah
-
   final TextEditingController kodeAbsensiController = TextEditingController();
 
   bool _isLoading = false;
@@ -39,26 +35,6 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
           _anggotaId = response['id'];
         });
       }
-    }
-  }
-
-  void _onItemTapped(int index) {
-    if (index == _selectedIndex) return;
-
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => DashboardScreen()),
-      );
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => ProfilScreen()),
-      );
     }
   }
 
@@ -237,7 +213,6 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
               padding: const EdgeInsets.only(top: 50, bottom: 30),
               child: Column(
                 children: [
-                  // Logo (tanpa border putih)
                   Image.asset(
                     'assets/image/logo.png',
                     width: 80,
@@ -373,59 +348,6 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-
-      // ===== BOTTOM NAVIGATION 3 TAB =====
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.red,
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins'),
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Image.asset(
-                  'assets/image/logo.png',
-                  width: 28,
-                  height: 28,
-                ),
-              ),
-              label: 'Presensi',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
             ),
           ],
         ),

@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:panah_presensi/screen/dashboard/dashboard_screen.dart';
-import 'package:panah_presensi/screen/absensi/absensi_screen.dart';
-import 'package:panah_presensi/screen/profil/profil_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class JadwalScreen extends StatefulWidget {
@@ -12,7 +9,6 @@ class JadwalScreen extends StatefulWidget {
 }
 
 class _JadwalScreenState extends State<JadwalScreen> {
-  int _selectedIndex = 0;
   List<Map<String, dynamic>> jadwalList = [];
   bool _isLoading = true;
 
@@ -44,25 +40,6 @@ class _JadwalScreenState extends State<JadwalScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text("Gagal memuat jadwal: $e")));
       }
-    }
-  }
-
-  void _onItemTapped(int index) {
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-      );
-    } else if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => AbsensiScreen()),
-      );
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfilScreen()),
-      );
     }
   }
 
@@ -156,12 +133,7 @@ class _JadwalScreenState extends State<JadwalScreen> {
                   // Tombol Back
                   InkWell(
                     onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DashboardScreen(),
-                        ),
-                      );
+                      Navigator.pop(context);
                     },
                     child: const Icon(
                       Icons.arrow_back,
@@ -205,207 +177,156 @@ class _JadwalScreenState extends State<JadwalScreen> {
                       child: CircularProgressIndicator(color: Colors.red),
                     )
                   : jadwalList.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            "Belum ada jadwal",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _fetchJadwal,
-                      color: Colors.red,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: jadwalList.length,
-                        itemBuilder: (context, index) {
-                          final item = jadwalList[index];
-                          final type = item['type'] ?? 'Latihan';
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Belum ada jadwal",
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
                                 ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: _getTypeColor(type).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    _getTypeIcon(type),
-                                    color: _getTypeColor(type),
-                                    size: 28,
-                                  ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _fetchJadwal,
+                          color: Colors.red,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: jadwalList.length,
+                            itemBuilder: (context, index) {
+                              final item = jadwalList[index];
+                              final type = item['type'] ?? 'Latihan';
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: _getTypeColor(type)
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        _getTypeIcon(type),
+                                        color: _getTypeColor(type),
+                                        size: 28,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Expanded(
-                                            child: Text(
-                                              item["title"] ?? "-",
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                fontFamily: 'Poppins',
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  item["title"] ?? "-",
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontFamily: 'Poppins',
+                                                  ),
+                                                ),
                                               ),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: _getTypeColor(
+                                                    type,
+                                                  ).withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  type,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontFamily: 'Poppins',
+                                                    color: _getTypeColor(type),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _formatDate(item["date"]),
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[700],
+                                              fontFamily: 'Poppins',
                                             ),
                                           ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
+                                          Text(
+                                            _formatTime(
+                                              item["time_start"],
+                                              item["time_end"],
                                             ),
-                                            decoration: BoxDecoration(
-                                              color: _getTypeColor(
-                                                type,
-                                              ).withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              type,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                fontFamily: 'Poppins',
-                                                color: _getTypeColor(type),
-                                              ),
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.grey[600],
+                                              fontFamily: 'Poppins',
                                             ),
                                           ),
+                                          if (item["location"] != null)
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.location_on,
+                                                  size: 14,
+                                                  color: Colors.grey[500],
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  item["location"],
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey[500],
+                                                    fontFamily: 'Poppins',
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                         ],
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _formatDate(item["date"]),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[700],
-                                          fontFamily: 'Poppins',
-                                        ),
-                                      ),
-                                      Text(
-                                        _formatTime(
-                                          item["time_start"],
-                                          item["time_end"],
-                                        ),
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.grey[600],
-                                          fontFamily: 'Poppins',
-                                        ),
-                                      ),
-                                      if (item["location"] != null)
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.location_on,
-                                              size: 14,
-                                              color: Colors.grey[500],
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              item["location"],
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey[500],
-                                                fontFamily: 'Poppins',
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
-
-      // ===== NAV BOTTOM =====
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.red,
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins'),
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Image.asset(
-                  'assets/image/logo.png',
-                  width: 28,
-                  height: 28,
-                ),
-              ),
-              label: 'Presensi',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
+                              );
+                            },
+                          ),
+                        ),
             ),
           ],
         ),

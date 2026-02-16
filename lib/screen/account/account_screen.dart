@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:panah_presensi/screen/absensi/absensi_screen.dart';
-
- // Import halaman DashboardScreen
 
 class AccountScreen extends StatefulWidget {
   @override
@@ -9,27 +6,10 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  int _selectedIndex = 1; // Menyimpan tab yang dipilih (1 untuk Akun)
-
-  // Fungsi untuk menangani perubahan tab
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    // Jika tab Dashboard dipilih, arahkan ke halaman DashboardScreen
-    if (_selectedIndex == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => AbsensiScreen()),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-       resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.grey[100],
       body: Column(
         children: [
@@ -42,7 +22,8 @@ class _AccountScreenState extends State<AccountScreen> {
                 Container(
                   width: 100,
                   height: 100,
-                  child: Image.asset('assets/image/logo.png', fit: BoxFit.contain),
+                  child:
+                      Image.asset('assets/image/logo.png', fit: BoxFit.contain),
                 ),
                 SizedBox(height: 10),
                 Text(
@@ -176,7 +157,7 @@ class _AccountScreenState extends State<AccountScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
-                 foregroundColor: Colors.white,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -195,24 +176,6 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
         ],
-      ),
-
-      // Bottom Navigation Bar
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex, // Menyinkronkan tab yang dipilih
-        onTap: _onItemTapped, // Fungsi yang dipanggil saat tab ditekan
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Akun',
-          ),
-        ],
-        selectedItemColor: Colors.red,
-        unselectedItemColor: Colors.grey,
       ),
     );
   }

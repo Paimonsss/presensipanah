@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:panah_presensi/screen/absensi/absensi_screen.dart';
-import 'package:panah_presensi/screen/dashboard/dashboard_screen.dart';
+import 'package:panah_presensi/screen/main_screen.dart';
 import 'package:panah_presensi/screen/register/register_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -36,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (authResponse.session != null) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => DashboardScreen()),
+          MaterialPageRoute(builder: (context) => const MainScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -201,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.session != null) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AbsensiScreen()),
+          MaterialPageRoute(builder: (context) => const MainScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

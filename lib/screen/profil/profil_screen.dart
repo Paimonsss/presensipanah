@@ -2,8 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:panah_presensi/screen/dashboard/dashboard_screen.dart';
-import 'package:panah_presensi/screen/absensi/absensi_screen.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
 
 class ProfilScreen extends StatefulWidget {
@@ -14,8 +12,6 @@ class ProfilScreen extends StatefulWidget {
 }
 
 class _ProfilScreenState extends State<ProfilScreen> {
-  int _selectedIndex = 2; // 0 = Dashboard, 1 = Presensi, 2 = Profil
-
   // Data user
   String _nama = "Memuat...";
   String _email = "Memuat...";
@@ -138,9 +134,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
       final bytes = await photo.readAsBytes();
 
       // Upload ke Supabase Storage
-      await Supabase.instance.client.storage
-          .from('avatars')
-          .uploadBinary(
+      await Supabase.instance.client.storage.from('avatars').uploadBinary(
             fileName,
             bytes,
             fileOptions: const FileOptions(upsert: true),
@@ -154,8 +148,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
       // Update tabel anggota
       await Supabase.instance.client
           .from('anggota')
-          .update({'photo_url': publicUrl})
-          .eq('user_id', user.id);
+          .update({'photo_url': publicUrl}).eq('user_id', user.id);
 
       setState(() {
         _photoUrl = publicUrl;
@@ -360,8 +353,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 if (user != null) {
                   await Supabase.instance.client
                       .from('anggota')
-                      .update({'nama': newNama})
-                      .eq('user_id', user.id);
+                      .update({'nama': newNama}).eq('user_id', user.id);
 
                   setState(() {
                     _nama = newNama;
@@ -396,27 +388,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
         ],
       ),
     );
-  }
-
-  void _onItemTapped(int index) {
-    if (index == _selectedIndex) return;
-
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-      );
-    } else if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => AbsensiScreen()),
-      );
-    }
-    // index == 2 sudah di Profil
   }
 
   // Widget untuk menampilkan foto profil
@@ -684,59 +655,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
               const SizedBox(height: 20),
             ],
           ),
-        ),
-      ),
-
-      // ===== NAVIGATION BAR (KONSISTEN: Dashboard - Presensi - Profil) =====
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.red,
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins'),
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Image.asset(
-                  'assets/image/logo.png',
-                  width: 28,
-                  height: 28,
-                ),
-              ),
-              label: 'Presensi',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
-            ),
-          ],
         ),
       ),
     );

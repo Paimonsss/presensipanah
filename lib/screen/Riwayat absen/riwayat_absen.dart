@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:panah_presensi/screen/dashboard/dashboard_screen.dart';
-import 'package:panah_presensi/screen/absensi/absensi_screen.dart';
-import 'package:panah_presensi/screen/profil/profil_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RiwayatAbsensiScreen extends StatefulWidget {
@@ -12,7 +9,6 @@ class RiwayatAbsensiScreen extends StatefulWidget {
 }
 
 class _RiwayatAbsensiScreenState extends State<RiwayatAbsensiScreen> {
-  int _selectedIndex = 0;
   List<Map<String, dynamic>> riwayatList = [];
   bool _isLoading = true;
   String? _anggotaId;
@@ -76,25 +72,6 @@ class _RiwayatAbsensiScreenState extends State<RiwayatAbsensiScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text("Gagal memuat riwayat: $e")));
       }
-    }
-  }
-
-  void _onItemTapped(int index) {
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
-      );
-    } else if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => AbsensiScreen()),
-      );
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfilScreen()),
-      );
     }
   }
 
@@ -171,12 +148,7 @@ class _RiwayatAbsensiScreenState extends State<RiwayatAbsensiScreen> {
                 children: [
                   InkWell(
                     onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DashboardScreen(),
-                        ),
-                      );
+                      Navigator.pop(context);
                     },
                     child: const Icon(
                       Icons.arrow_back,
@@ -262,181 +234,129 @@ class _RiwayatAbsensiScreenState extends State<RiwayatAbsensiScreen> {
                       child: CircularProgressIndicator(color: Colors.red),
                     )
                   : riwayatList.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.history,
-                            size: 64,
-                            color: Colors.grey[400],
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.history,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Belum ada riwayat absensi",
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            "Belum ada riwayat absensi",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      color: Colors.red,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: riwayatList.length,
-                        itemBuilder: (context, index) {
-                          final item = riwayatList[index];
-                          final sesi =
-                              item['sesi_absensi'] as Map<String, dynamic>?;
-                          final status = item['status'] ?? 'Tidak Diketahui';
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadData,
+                          color: Colors.red,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: riwayatList.length,
+                            itemBuilder: (context, index) {
+                              final item = riwayatList[index];
+                              final sesi =
+                                  item['sesi_absensi'] as Map<String, dynamic>?;
+                              final status =
+                                  item['status'] ?? 'Tidak Diketahui';
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: _getStatusColor(
-                                      status,
-                                    ).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    _getStatusIcon(status),
-                                    color: _getStatusColor(status),
-                                    size: 28,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "Sesi ${sesi?['kode'] ?? '-'}",
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          fontFamily: 'Poppins',
-                                        ),
-                                      ),
-                                      Text(
-                                        "Tanggal: ${_formatDate(sesi?['tanggal'])}",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontFamily: 'Poppins',
-                                          color: Colors.grey[700],
-                                        ),
-                                      ),
-                                      Text(
-                                        "Jam: ${_formatTime(item['waktu_hadir'])}",
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontFamily: 'Poppins',
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _getStatusColor(
-                                      status,
-                                    ).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    status,
-                                    style: TextStyle(
-                                      color: _getStatusColor(status),
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Poppins',
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 4),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
-
-      // ===== NAV BOTTOM =====
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.red,
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins'),
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Image.asset(
-                  'assets/image/logo.png',
-                  width: 28,
-                  height: 28,
-                ),
-              ),
-              label: 'Presensi',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(
+                                          status,
+                                        ).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        _getStatusIcon(status),
+                                        color: _getStatusColor(status),
+                                        size: 28,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Sesi ${sesi?['kode'] ?? '-'}",
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          ),
+                                          Text(
+                                            "Tanggal: ${_formatDate(sesi?['tanggal'])}",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontFamily: 'Poppins',
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                          Text(
+                                            "Jam: ${_formatTime(item['waktu_hadir'])}",
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontFamily: 'Poppins',
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(
+                                          status,
+                                        ).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        status,
+                                        style: TextStyle(
+                                          color: _getStatusColor(status),
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Poppins',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
             ),
           ],
         ),
