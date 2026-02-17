@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
+import 'package:panah_presensi/utils/lightweight_route.dart';
 
 class ProfilScreen extends StatefulWidget {
   const ProfilScreen({super.key});
@@ -274,11 +275,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
               Navigator.pop(context);
               await Supabase.instance.client.auth.signOut();
               if (mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => LoginScreen()),
-                  (route) => false,
-                );
+                lightPushAndRemoveAll(context, LoginScreen());
               }
             },
             child: const Text(

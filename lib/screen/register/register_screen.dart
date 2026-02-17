@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
+import 'package:panah_presensi/utils/lightweight_route.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -89,10 +90,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context); // tutup dialog
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginScreen()),
-                  );
+                  lightPushReplacement(context, LoginScreen());
                 },
                 child: const Text(
                   "OK",
@@ -251,11 +249,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Center(
                     child: TextButton(
                       onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => LoginScreen()),
-                        );
+                        lightPushReplacement(context, LoginScreen());
                       },
                       child: const Text(
                         "Sudah punya akun? Masuk",

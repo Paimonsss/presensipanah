@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
+import 'package:panah_presensi/utils/lightweight_route.dart';
 
 class Onboarding2Screen extends StatelessWidget {
   @override
@@ -111,10 +112,7 @@ class Onboarding2Screen extends StatelessWidget {
                   // Tombol SELESAI
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginScreen()),
-                      );
+                      lightPushReplacement(context, LoginScreen());
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
+import 'package:panah_presensi/utils/lightweight_route.dart';
 
 class VerificationScreen extends StatefulWidget {
   final String email;
@@ -96,10 +97,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
           const SnackBar(content: Text("Verifikasi berhasil! Silakan login.")),
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-        );
+        lightPushReplacement(context, LoginScreen());
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Verifikasi gagal")),

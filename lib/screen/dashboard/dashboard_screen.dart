@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:panah_presensi/screen/Riwayat%20absen/riwayat_absen.dart';
 import 'package:panah_presensi/screen/jadwal/jadwal_screen.dart';
 import 'package:panah_presensi/screen/main_screen.dart';
+import 'package:panah_presensi/utils/lightweight_route.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -147,12 +148,7 @@ class DashboardScreen extends StatelessWidget {
                             title: "Riwayat",
                             color: Colors.green,
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const RiwayatAbsensiScreen()),
-                              );
+                              lightPush(context, const RiwayatAbsensiScreen());
                             },
                           ),
                         ),
@@ -167,11 +163,7 @@ class DashboardScreen extends StatelessWidget {
                             title: "Jadwal",
                             color: Colors.orange,
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => JadwalScreen()),
-                              );
+                              lightPush(context, JadwalScreen());
                             },
                           ),
                         ),

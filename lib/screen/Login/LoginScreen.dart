@@ -3,6 +3,7 @@ import 'package:panah_presensi/screen/main_screen.dart';
 import 'package:panah_presensi/screen/register/register_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:panah_presensi/utils/lightweight_route.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -33,10 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (authResponse.session != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
+        lightPushReplacement(context, const MainScreen());
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Email atau password salah")),
@@ -198,10 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (response.session != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
+        lightPushReplacement(context, const MainScreen());
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Login dengan Google gagal")),
@@ -281,6 +276,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextField(
                     controller: emailController,
                     style: const TextStyle(fontFamily: 'Poppins'),
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
                       labelText: "Email",
                       labelStyle: const TextStyle(fontFamily: 'Poppins'),
@@ -306,6 +303,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: passwordController,
                     obscureText: !_isPasswordVisible,
                     style: const TextStyle(fontFamily: 'Poppins'),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _isLoading ? null : login(),
                     decoration: InputDecoration(
                       labelText: "Kata Sandi",
                       labelStyle: const TextStyle(fontFamily: 'Poppins'),
@@ -456,10 +455,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Center(
                     child: TextButton(
                       onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => RegisterScreen()));
+                        lightPush(context, RegisterScreen());
                       },
                       child: const Text(
                         "Belum punya akun? Daftar",

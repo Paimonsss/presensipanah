@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:panah_presensi/screen/register/register_screen.dart';
+import 'package:panah_presensi/utils/lightweight_route.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -13,12 +14,7 @@ class WelcomeScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RegisterScreen (), // Ganti dengan layar tujuan
-                ),
-              );
+              lightPush(context, RegisterScreen());
             },
             child: Text(
               "",
@@ -38,12 +34,10 @@ class WelcomeScreen extends StatelessWidget {
             fontSize: 30,
             fontFamily: 'Poppins',
             fontWeight: FontWeight.bold,
-           // Warna diperbaiki
+            // Warna diperbaiki
           ),
         ),
       ),
     );
   }
 }
-
-

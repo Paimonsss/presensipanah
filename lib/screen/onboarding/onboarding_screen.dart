@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
+import 'package:panah_presensi/utils/lightweight_route.dart';
 
 class OnboardingScreen extends StatefulWidget {
   @override
@@ -28,10 +29,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _goToLogin() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-    );
+    lightPushReplacement(context, LoginScreen());
   }
 
   @override
