@@ -20,10 +20,14 @@ Future<void> main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNscGFyanNzaGhueGpndnd1anp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NDQyOTgsImV4cCI6MjA4MTUyMDI5OH0.Ud7OYgFGNiIP5sK_04uldvYASBb7KgOucCQkEnN_zQY',
   );
 
-  await GoogleSignIn.instance.initialize(
-    serverClientId:
-        '229312233486-kli5atno31233jagqgaa3isoubh4d3tq.apps.googleusercontent.com',
-  );
+  try {
+    await GoogleSignIn.instance.initialize(
+      serverClientId:
+          '229312233486-kli5atno31233jagqgaa3isoubh4d3tq.apps.googleusercontent.com',
+    );
+  } catch (_) {
+    // Google Sign-In init may fail on web/desktop — akan tetap jalan di Android
+  }
 
   runApp(const MyApp());
 }

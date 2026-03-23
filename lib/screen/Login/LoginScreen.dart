@@ -204,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: const EdgeInsets.fromLTRB(28, 0, 28, 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

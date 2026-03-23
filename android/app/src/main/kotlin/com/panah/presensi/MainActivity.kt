@@ -1,4 +1,4 @@
-package com.panah_presensi
+package com.panah.presensi
 
 import io.flutter.embedding.android.FlutterActivity
 
