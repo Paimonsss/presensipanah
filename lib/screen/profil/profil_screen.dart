@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:panah_presensi/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
@@ -7,696 +8,460 @@ import 'package:panah_presensi/utils/lightweight_route.dart';
 
 class ProfilScreen extends StatefulWidget {
   const ProfilScreen({super.key});
-
   @override
   State<ProfilScreen> createState() => _ProfilScreenState();
 }
 
 class _ProfilScreenState extends State<ProfilScreen> {
-  // Data user
-  String _nama = "Memuat...";
-  String _email = "Memuat...";
-  String _userId = "";
-  String _tanggalBergabung = "-";
+  String _nama = "Memuat...", _email = "", _userId = "", _tglBergabung = "-";
   String? _photoUrl;
   File? _localPhoto;
-  bool _isLoading = true;
-  bool _isUploadingPhoto = false;
-
-  final ImagePicker _picker = ImagePicker();
+  bool _isLoading = true, _uploading = false;
+  final _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _load();
   }
 
-  Future<void> _loadUserData() async {
+  Future<void> _load() async {
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-
-      if (user != null) {
+      final u = Supabase.instance.client.auth.currentUser;
+      if (u != null) {
         setState(() {
-          _email = user.email ?? "-";
-          _userId = user.id.substring(0, 8).toUpperCase();
-          _tanggalBergabung = _formatDate(user.createdAt);
-          _photoUrl = user.userMetadata?['avatar_url'];
+          _email = u.email ?? "-";
+          _userId = u.id.substring(0, 8).toUpperCase();
+          _tglBergabung = _fmtDate(u.createdAt);
+          _photoUrl = u.userMetadata?['avatar_url'];
         });
-
-        // Ambil nama dari tabel anggota
-        final response = await Supabase.instance.client
+        final r = await Supabase.instance.client
             .from('anggota')
             .select('nama, photo_url')
-            .eq('user_id', user.id)
+            .eq('user_id', u.id)
             .maybeSingle();
-
-        if (response != null) {
+        if (r != null)
           setState(() {
-            if (response['nama'] != null) {
-              _nama = response['nama'];
-            }
-            if (response['photo_url'] != null) {
-              _photoUrl = response['photo_url'];
-            }
+            if (r['nama'] != null) _nama = r['nama'];
+            if (r['photo_url'] != null) _photoUrl = r['photo_url'];
           });
-        } else {
-          setState(() {
-            _nama = user.email?.split('@')[0] ?? "Anggota";
-          });
-        }
+        else
+          setState(() => _nama = u.email?.split('@')[0] ?? "Anggota");
       }
-    } catch (e) {
-      debugPrint("Error loading user data: $e");
+    } catch (_) {
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
-  String _formatDate(String isoDate) {
+  String _fmtDate(String iso) {
     try {
-      final date = DateTime.parse(isoDate);
-      final months = [
-        'Januari',
-        'Februari',
-        'Maret',
-        'April',
+      final d = DateTime.parse(iso);
+      const m = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
         'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember',
+        'Jun',
+        'Jul',
+        'Agu',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Des'
       ];
-      return "${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}";
-    } catch (e) {
+      return "${d.day} ${m[d.month - 1]} ${d.year}";
+    } catch (_) {
       return "-";
     }
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickImage(ImageSource src) async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: source,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 80,
-      );
-
-      if (pickedFile != null) {
-        setState(() {
-          _localPhoto = File(pickedFile.path);
-        });
-        await _uploadPhoto(pickedFile);
+      final f = await _picker.pickImage(
+          source: src, maxWidth: 512, maxHeight: 512, imageQuality: 80);
+      if (f != null) {
+        setState(() => _localPhoto = File(f.path));
+        _upload(f);
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Gagal memilih foto: $e")));
-      }
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Gagal memilih foto. Coba lagi.")));
     }
   }
 
-  Future<void> _uploadPhoto(XFile photo) async {
-    setState(() {
-      _isUploadingPhoto = true;
-    });
-
+  Future<void> _upload(XFile photo) async {
+    setState(() => _uploading = true);
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
-
-      final fileExt = photo.path.split('.').last.toLowerCase();
-      final fileName = '${user.id}/profile.$fileExt';
-      final bytes = await photo.readAsBytes();
-
-      // Upload ke Supabase Storage
+      final u = Supabase.instance.client.auth.currentUser;
+      if (u == null) return;
+      final ext = photo.path.split('.').last;
+      final name = '${u.id}/profile.$ext';
       await Supabase.instance.client.storage.from('avatars').uploadBinary(
-            fileName,
-            bytes,
-            fileOptions: const FileOptions(upsert: true),
-          );
-
-      // Dapatkan URL publik
-      final publicUrl = Supabase.instance.client.storage
-          .from('avatars')
-          .getPublicUrl(fileName);
-
-      // Update tabel anggota
+          name, await photo.readAsBytes(),
+          fileOptions: const FileOptions(upsert: true));
+      final url =
+          Supabase.instance.client.storage.from('avatars').getPublicUrl(name);
       await Supabase.instance.client
           .from('anggota')
-          .update({'photo_url': publicUrl}).eq('user_id', user.id);
-
-      setState(() {
-        _photoUrl = publicUrl;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Foto profil berhasil diperbarui!"),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+          .update({'photo_url': url}).eq('user_id', u.id);
+      setState(() => _photoUrl = url);
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Foto berhasil diperbarui!"),
+            backgroundColor: AppTheme.success));
     } catch (e) {
-      debugPrint("Error uploading photo: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Gagal upload foto: $e")));
-      }
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Gagal mengupload foto. Periksa koneksi internet Anda.")));
     } finally {
-      setState(() {
-        _isUploadingPhoto = false;
-      });
+      setState(() => _uploading = false);
     }
   }
 
-  void _showPhotoOptions() {
+  void _showPhotoSheet() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Ganti Foto Profil",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.camera_alt, color: Colors.red),
-                ),
-                title: const Text(
-                  "Ambil Foto",
-                  style: TextStyle(fontFamily: 'Poppins'),
-                ),
-                subtitle: const Text(
-                  "Gunakan kamera untuk mengambil foto baru",
-                  style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.photo_library, color: Colors.red),
-                ),
-                title: const Text(
-                  "Pilih dari Galeri",
-                  style: TextStyle(fontFamily: 'Poppins'),
-                ),
-                subtitle: const Text(
-                  "Pilih foto dari galeri perangkat",
-                  style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _logout() async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          "Keluar",
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold),
-        ),
-        content: const Text(
-          "Apakah Anda yakin ingin keluar?",
-          style: TextStyle(fontFamily: 'Poppins'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Batal",
-              style: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await Supabase.instance.client.auth.signOut();
-              if (mounted) {
-                lightPushAndRemoveAll(context, LoginScreen());
-              }
-            },
-            child: const Text(
-              "Keluar",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditProfileDialog() {
-    final TextEditingController namaController = TextEditingController(
-      text: _nama,
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          "Edit Profil",
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: namaController,
-              style: const TextStyle(fontFamily: 'Poppins'),
-              decoration: InputDecoration(
-                labelText: "Nama",
-                labelStyle: const TextStyle(fontFamily: 'Poppins'),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.red, width: 2),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Batal",
-              style: TextStyle(fontFamily: 'Poppins', color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newNama = namaController.text.trim();
-              if (newNama.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Nama tidak boleh kosong")),
-                );
-                return;
-              }
-
-              Navigator.pop(context);
-
-              try {
-                final user = Supabase.instance.client.auth.currentUser;
-                if (user != null) {
-                  await Supabase.instance.client
-                      .from('anggota')
-                      .update({'nama': newNama}).eq('user_id', user.id);
-
-                  setState(() {
-                    _nama = newNama;
-                  });
-
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Nama berhasil diperbarui!"),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Gagal update nama: $e")),
-                  );
-                }
-              }
-            },
-            child: const Text(
-              "Simpan",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Widget untuk menampilkan foto profil
-  Widget _buildProfilePhoto() {
-    ImageProvider? imageProvider;
-
-    if (_localPhoto != null) {
-      imageProvider = FileImage(_localPhoto!);
-    } else if (_photoUrl != null && _photoUrl!.isNotEmpty) {
-      imageProvider = NetworkImage(_photoUrl!);
-    }
-
-    return Stack(
-      children: [
-        CircleAvatar(
-          radius: 50,
-          backgroundColor: Colors.white,
-          backgroundImage: imageProvider,
-          child: imageProvider == null
-              ? const Icon(Icons.person, size: 60, color: Colors.red)
-              : null,
-        ),
-        // Tombol edit foto
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: GestureDetector(
-            onTap: _isUploadingPhoto ? null : _showPhotoOptions,
-            child: Container(
-              padding: const EdgeInsets.all(8),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+        decoration: const BoxDecoration(
+            color: AppTheme.snow,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                  color: AppTheme.slate.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 20),
+          Text("Ganti Foto", style: AppTheme.h3),
+          const SizedBox(height: 16),
+          ListTile(
+              leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                      color: AppTheme.peach, shape: BoxShape.circle),
+                  child: const Icon(Icons.camera_alt, color: AppTheme.coral)),
+              title: Text("Kamera",
+                  style: AppTheme.bodyLarge.copyWith(color: AppTheme.navy)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera);
+              }),
+          ListTile(
+              leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                      color: AppTheme.mint, shape: BoxShape.circle),
+                  child: const Icon(Icons.photo_library, color: AppTheme.teal)),
+              title: Text("Galeri",
+                  style: AppTheme.bodyLarge.copyWith(color: AppTheme.navy)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              }),
+        ]),
+      ),
+    );
+  }
+
+  void _editName() {
+    final c = TextEditingController(text: _nama);
+    showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (ctx) => Padding(
+              padding:
+                  EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+                decoration: const BoxDecoration(
+                    color: AppTheme.snow,
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(28))),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: AppTheme.slate.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(2))),
+                  const SizedBox(height: 20),
+                  Text("Edit Nama", style: AppTheme.h3),
+                  const SizedBox(height: 16),
+                  TextField(
+                      controller: c,
+                      autofocus: true,
+                      style: AppTheme.bodyLarge.copyWith(color: AppTheme.navy),
+                      decoration: AppTheme.inputDecoration(
+                          label: "", hint: "Nama baru")),
+                  const SizedBox(height: 20),
+                  CoralButton(
+                      onPressed: () async {
+                        final n = c.text.trim();
+                        if (n.isEmpty) return;
+                        Navigator.pop(ctx);
+                        final u = Supabase.instance.client.auth.currentUser;
+                        if (u != null) {
+                          await Supabase.instance.client
+                              .from('anggota')
+                              .update({'nama': n}).eq('user_id', u.id);
+                          setState(() => _nama = n);
+                        }
+                      },
+                      child: const Text("Simpan")),
+                ]),
               ),
-              child: _isUploadingPhoto
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.camera_alt, size: 16, color: Colors.white),
-            ),
-          ),
-        ),
-      ],
+            ));
+  }
+
+  void _logout() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+        decoration: const BoxDecoration(
+            color: AppTheme.snow,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: AppTheme.slate.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 24),
+          Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                  color: AppTheme.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle),
+              child: const Icon(Icons.logout_rounded,
+                  color: AppTheme.error, size: 36)),
+          const SizedBox(height: 16),
+          const Text("Keluar?", style: AppTheme.h3),
+          const SizedBox(height: 8),
+          const Text("Apakah yakin ingin keluar?", style: AppTheme.body),
+          const SizedBox(height: 24),
+          Row(children: [
+            Expanded(
+                child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.slate,
+                        side: BorderSide(
+                            color: AppTheme.slate.withValues(alpha: 0.2)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28)),
+                        padding: const EdgeInsets.symmetric(vertical: 14)),
+                    child: Text("Batal",
+                        style:
+                            AppTheme.button.copyWith(color: AppTheme.slate)))),
+            const SizedBox(width: 12),
+            Expanded(
+                child: CoralButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      await Supabase.instance.client.auth.signOut();
+                      if (mounted)
+                        lightPushAndRemoveAll(context, LoginScreen());
+                    },
+                    child: const Text("Keluar"))),
+          ]),
+        ]),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider? img;
+    if (_localPhoto != null)
+      img = FileImage(_localPhoto!);
+    else if (_photoUrl != null && _photoUrl!.isNotEmpty)
+      img = NetworkImage(_photoUrl!);
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // ===== HEADER MERAH DENGAN LOGO =====
-              Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                ),
-                padding: const EdgeInsets.only(top: 30, bottom: 30),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        shape: BoxShape.circle,
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
+        child: SafeArea(
+          bottom: false,
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: AppTheme.coral))
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 100),
+                  child: Column(
+                    children: [
+                      // Top bar
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                        child: Row(children: [
+                          Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                  color: AppTheme.coral.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12)),
+                              child: Image.asset('assets/image/logo.png',
+                                  width: 36, height: 36)),
+                          const SizedBox(width: 12),
+                          Text("Profil",
+                              style: AppTheme.h3.copyWith(fontSize: 16)),
+                        ]),
                       ),
-                      child: Image.asset(
-                        'assets/image/logo.png',
-                        width: 50,
-                        height: 50,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Teks PANAH PRESENSI
-                    const Text(
-                      "PANAH PRESENSI",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: 28),
 
-              const SizedBox(height: 20),
+                      // Photo
+                      Stack(children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: AppTheme.coralGradient),
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
+                                color: AppTheme.cloud, shape: BoxShape.circle),
+                            child: CircleAvatar(
+                                radius: 56,
+                                backgroundColor: AppTheme.cloud,
+                                backgroundImage: img,
+                                child: img == null
+                                    ? const Icon(Icons.person_rounded,
+                                        size: 64, color: AppTheme.slate)
+                                    : null),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: _uploading ? null : _showPhotoSheet,
+                            child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                    gradient: AppTheme.coralGradient,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: AppTheme.cloud, width: 3)),
+                                child: _uploading
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white))
+                                    : const Icon(Icons.camera_alt_rounded,
+                                        size: 16, color: Colors.white)),
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 16),
+                      Text(_nama, style: AppTheme.h2),
+                      Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 4),
+                        decoration: BoxDecoration(
+                            color: AppTheme.coral.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20)),
+                        child: Text("ID: $_userId",
+                            style: AppTheme.caption.copyWith(
+                                color: AppTheme.coral,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                      const SizedBox(height: 28),
 
-              // ===== CARD PROFIL =====
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
+                      // Info cards
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(children: [
+                          _infoTile(Icons.email_outlined, "Email", _email,
+                              AppTheme.coral),
+                          _infoTile(Icons.calendar_today_outlined, "Bergabung",
+                              _tglBergabung, AppTheme.teal),
+                        ]),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Actions
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(children: [
+                          CoralButton(
+                              onPressed: _editName,
+                              child: const Text("Edit Profil")),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                  onPressed:
+                                      _uploading ? null : _showPhotoSheet,
+                                  style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppTheme.navy,
+                                      side: BorderSide(
+                                          color: AppTheme.slate
+                                              .withValues(alpha: 0.2)),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(28)),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 14)),
+                                  child: Text(
+                                      _uploading
+                                          ? "Mengupload..."
+                                          : "Ganti Foto Profil",
+                                      style: AppTheme.bodyLarge
+                                          .copyWith(color: AppTheme.navy)))),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                              width: double.infinity,
+                              child: TextButton(
+                                  onPressed: _logout,
+                                  style: TextButton.styleFrom(
+                                      foregroundColor: AppTheme.error,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 14)),
+                                  child: Text("Keluar",
+                                      style: AppTheme.button
+                                          .copyWith(color: AppTheme.error)))),
+                        ]),
                       ),
                     ],
                   ),
-                  child: _isLoading
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(40),
-                            child: CircularProgressIndicator(color: Colors.red),
-                          ),
-                        )
-                      : Column(
-                          children: [
-                            // Foto profil dengan opsi ganti
-                            _buildProfilePhoto(),
-                            const SizedBox(height: 16),
-                            Text(
-                              _nama,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Poppins',
-                              ),
-                            ),
-                            Text(
-                              "ID: $_userId",
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                                fontFamily: 'Poppins',
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Informasi tambahan
-                            _buildInfoRow(
-                              Icons.email_outlined,
-                              "Email",
-                              _email,
-                            ),
-                            _buildInfoRow(
-                              Icons.calendar_today_outlined,
-                              "Tanggal Bergabung",
-                              _tanggalBergabung,
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            // Tombol Ganti Foto
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                  side: const BorderSide(color: Colors.red),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                ),
-                                onPressed: _isUploadingPhoto
-                                    ? null
-                                    : _showPhotoOptions,
-                                icon: _isUploadingPhoto
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.red,
-                                        ),
-                                      )
-                                    : const Icon(Icons.camera_alt),
-                                label: Text(
-                                  _isUploadingPhoto
-                                      ? "Mengupload..."
-                                      : "Ganti Foto Profil",
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: 'Poppins',
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Tombol Edit Profil
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                ),
-                                onPressed: _showEditProfileDialog,
-                                child: const Text(
-                                  "Edit Profil",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: 'Poppins',
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Tombol Logout
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                  side: const BorderSide(color: Colors.red),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                ),
-                                onPressed: _logout,
-                                child: const Text(
-                                  "Keluar",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                 ),
-              ),
-
-              const SizedBox(height: 20),
-            ],
-          ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(
+  Widget _infoTile(IconData icon, String label, String value, Color color) {
+    return AccentCard(
+      accentColor: color,
+      child: Row(children: [
+        Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: Colors.red, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color, size: 20)),
+        const SizedBox(width: 14),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: AppTheme.caption),
+          Text(value,
+              style: AppTheme.bodyLarge
+                  .copyWith(color: AppTheme.navy, fontWeight: FontWeight.w600)),
+        ])),
+      ]),
     );
   }
 }

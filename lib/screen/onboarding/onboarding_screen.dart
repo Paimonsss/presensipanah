@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:panah_presensi/app_theme.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
 import 'package:panah_presensi/utils/lightweight_route.dart';
 
@@ -17,283 +18,184 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _goToNextPage() {
+  void _next() {
     if (_currentPage < 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOutCubic,
       );
     } else {
       _goToLogin();
     }
   }
 
-  void _goToLogin() {
-    lightPushReplacement(context, LoginScreen());
-  }
+  void _goToLogin() => lightPushReplacement(context, LoginScreen());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Header merah dengan rounded bottom corners
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 20,
-              bottom: 20,
-            ),
-            decoration: const BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // ═══ Top bar ═══
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.coral.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Image.asset('assets/image/logo.png',
+                          width: 36, height: 36),
+                    ),
+                    const SizedBox(width: 10),
+                    Text("Panah Presensi",
+                        style: AppTheme.h3.copyWith(fontSize: 16)),
+                    const Spacer(),
+                    if (_currentPage == 0)
+                      TextButton(
+                        onPressed: _goToLogin,
+                        child: Text("Lewati",
+                            style:
+                                AppTheme.body.copyWith(color: AppTheme.coral)),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 50,
-                  height: 50,
-                  child: Image.asset(
-                    'assets/image/logo.png',
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  "PANAH PRESENSI",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
 
-          // PageView untuk swipe antar halaman
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                });
-              },
-              children: [
-                _buildPage1(),
-                _buildPage2(),
-              ],
-            ),
-          ),
+              // ═══ Pages ═══
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (i) => setState(() => _currentPage = i),
+                  children: [_buildPage1(), _buildPage2()],
+                ),
+              ),
 
-          // Bottom navigation area dengan background PUTIH
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 16,
-              bottom: MediaQuery.of(context).padding.bottom + 16,
-            ),
-            color: Colors.white,
-            child: _currentPage == 0 ? _buildBottomNav1() : _buildBottomNav2(),
+              // ═══ Bottom ═══
+              Padding(
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 16,
+                  bottom: MediaQuery.of(context).padding.bottom + 20,
+                ),
+                child: Column(
+                  children: [
+                    // Dots
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(2, (i) {
+                        final active = _currentPage == i;
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: active ? 32 : 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            gradient: active ? AppTheme.coralGradient : null,
+                            color: active
+                                ? null
+                                : AppTheme.slate.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 24),
+                    CoralButton(
+                      onPressed: _next,
+                      child: Text(_currentPage == 0
+                          ? "Berikutnya →"
+                          : "Mulai Sekarang 🚀"),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  // Bottom navigation untuk halaman 1
-  Widget _buildBottomNav1() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Tombol LEWATI - outlined merah
-        OutlinedButton(
-          onPressed: _goToLogin,
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: Colors.red, width: 2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-          ),
-          child: const Text(
-            "LEWATI",
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              color: Colors.red,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-
-        // Dots indicator - halaman 1 aktif
-        Row(
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                shape: BoxShape.circle,
-              ),
-            ),
-          ],
-        ),
-
-        // Tombol BERIKUT - outlined merah
-        OutlinedButton(
-          onPressed: _goToNextPage,
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: Colors.red, width: 2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-          ),
-          child: const Text(
-            "BERIKUT",
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              color: Colors.red,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Bottom navigation untuk halaman 2
-  Widget _buildBottomNav2() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Dots indicator - halaman 2 aktif
-        Row(
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(width: 20),
-
-        // Tombol SELESAI - outlined merah
-        OutlinedButton(
-          onPressed: _goToLogin,
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: Colors.red, width: 2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 28),
-          ),
-          child: const Text(
-            "SELESAI",
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              color: Colors.red,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Konten Halaman 1
   Widget _buildPage1() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
-          // Judul bold
-          const Text(
-            "Selamat Datang di Panah Presensi!",
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
-              color: Colors.black,
+          // Hero illustration area
+          Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/image/archery.png',
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
-          const Text(
-            "Aplikasi ini dirancang untuk membantu pencatatan absensi rutin.",
-            style: TextStyle(
-              fontSize: 13,
-              fontFamily: 'Poppins',
-              color: Colors.black87,
-            ),
+          const SizedBox(height: 32),
+          Text("Selamat Datang! 🏹", style: AppTheme.h1),
+          const SizedBox(height: 8),
+          Text(
+            "Aplikasi presensi digital untuk ekskul panahan.",
+            style: AppTheme.bodyLarge.copyWith(height: 1.6),
           ),
           const SizedBox(height: 24),
-          // Checklist items
-          _buildCheckItem("Absensi berbasis aplikasi"),
-          const SizedBox(height: 12),
-          _buildCheckItem("Terdata secara digital"),
-          const SizedBox(height: 12),
-          _buildCheckItem("Memantau kehadiran murid"),
-          const SizedBox(height: 12),
-          _buildCheckItem("Mudah, cepat dan simple"),
+          _featureItem("Absensi berbasis aplikasi", Icons.phone_android_rounded,
+              AppTheme.coral),
+          _featureItem(
+              "Data tercatat digital", Icons.cloud_done_rounded, AppTheme.teal),
+          _featureItem("Pantau kehadiran mudah", Icons.visibility_rounded,
+              AppTheme.info),
+          _featureItem(
+              "Cepat dan simpel", Icons.bolt_rounded, AppTheme.warning),
         ],
       ),
     );
   }
 
-  // Konten Halaman 2
   Widget _buildPage2() {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 16),
-          Text(
-            "Absensi ekskul panahan jadi lebih praktis! Cukup pakai ponsel pintarmu, nggak perlu ribet bawa alat tulis atau buku absensi. Simpel, cepat, dan bebas repot!",
-            textAlign: TextAlign.justify,
-            style: TextStyle(
-              fontSize: 13,
-              fontFamily: 'Poppins',
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
-              height: 1.5,
+          Center(
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                color: AppTheme.mint,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.smartphone_rounded,
+                  size: 80, color: AppTheme.teal),
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text("Absensi Lebih\nPraktis! 📱", style: AppTheme.h1),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppTheme.snow,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: AppTheme.ultraSoft,
+            ),
+            child: Text(
+              "Cukup pakai ponsel pintarmu, nggak perlu ribet bawa alat tulis atau buku absensi. Simpel, cepat, dan bebas repot!",
+              textAlign: TextAlign.justify,
+              style: AppTheme.bodyLarge.copyWith(height: 1.7),
             ),
           ),
         ],
@@ -301,28 +203,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildCheckItem(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.check_circle_outline,
-          color: Colors.grey[600],
-          size: 20,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 13,
-              fontFamily: 'Poppins',
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
+  Widget _featureItem(String text, IconData icon, Color color) {
+    return AccentCard(
+      accentColor: color,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
+            child: Icon(icon, color: color, size: 20),
           ),
-        ),
-      ],
+          const SizedBox(width: 14),
+          Expanded(
+              child: Text(text,
+                  style: AppTheme.bodyLarge.copyWith(color: AppTheme.navy))),
+          Icon(Icons.check_circle_rounded, color: color, size: 20),
+        ],
+      ),
     );
   }
 }

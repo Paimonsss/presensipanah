@@ -25,8 +25,8 @@ class Onboarding2Screen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: 70,
-                    height: 70,
+                    width: 120,
+                    height: 120,
                     child: Image.asset(
                       'assets/image/logo.png',
                       fit: BoxFit.contain,

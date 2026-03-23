@@ -20,8 +20,8 @@ class _AccountScreenState extends State<AccountScreen> {
             child: Column(
               children: [
                 Container(
-                  width: 100,
-                  height: 100,
+                  width: 140,
+                  height: 140,
                   child:
                       Image.asset('assets/image/logo.png', fit: BoxFit.contain),
                 ),

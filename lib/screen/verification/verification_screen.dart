@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:panah_presensi/app_theme.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
 import 'package:panah_presensi/utils/lightweight_route.dart';
 
@@ -74,7 +75,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Verify OTP
       final response = await Supabase.instance.client.auth.verifyOTP(
         type: OtpType.signup,
         token: otp,
@@ -82,13 +82,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
       );
 
       if (response.user != null) {
-        // Insert ke tabel anggota setelah verifikasi berhasil
         await Supabase.instance.client.from("anggota").insert({
           'user_id': response.user!.id,
           'nama': widget.nama,
         });
 
-        // Sign out agar user login manual
         await Supabase.instance.client.auth.signOut();
 
         if (!mounted) return;
@@ -105,7 +103,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        const SnackBar(
+            content: Text("Verifikasi gagal. Periksa kode dan coba lagi.")),
       );
     }
 
@@ -130,7 +129,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
       _startCountdown();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        const SnackBar(
+            content: Text("Gagal mengirim ulang kode. Coba lagi nanti.")),
       );
     }
 
@@ -151,165 +151,162 @@ class _VerificationScreenState extends State<VerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Header merah
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            color: Colors.red,
-            child: Column(
-              children: [
-                Image.asset(
-                  'assets/image/logo.png',
-                  fit: BoxFit.contain,
-                  width: 100,
-                  height: 100,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  "PANAH PRESENSI",
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 24,
-                    color: Colors.white,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // ═══ TOP BAR ═══
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 24, 0),
+                child: Row(children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_rounded,
+                        color: AppTheme.navy),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 30),
+                  const Spacer(),
+                  Text("Verifikasi",
+                      style: AppTheme.h3.copyWith(fontSize: 16)),
+                  const Spacer(),
+                  const SizedBox(width: 48),
+                ]),
+              ),
 
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  const Icon(Icons.email_outlined, size: 80, color: Colors.red),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "Verifikasi Email",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "Masukkan kode 6 digit yang telah dikirim ke\n${widget.email}",
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: 'Poppins',
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
+              const SizedBox(height: 24),
 
-                  // OTP Input Fields
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(6, (index) {
-                      return SizedBox(
-                        width: 45,
-                        height: 55,
-                        child: TextField(
-                          controller: _controllers[index],
-                          focusNode: _focusNodes[index],
-                          textAlign: TextAlign.center,
-                          keyboardType: TextInputType.number,
-                          maxLength: 1,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          decoration: InputDecoration(
-                            counterText: "",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Colors.red),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide:
-                                  const BorderSide(color: Colors.red, width: 2),
-                            ),
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          onChanged: (value) {
-                            if (value.isNotEmpty && index < 5) {
-                              _focusNodes[index + 1].requestFocus();
-                            } else if (value.isEmpty && index > 0) {
-                              _focusNodes[index - 1].requestFocus();
-                            }
-                          },
+              // ═══ CONTENT ═══
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      // Email icon
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppTheme.peach,
+                          shape: BoxShape.circle,
                         ),
-                      );
-                    }),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  // Tombol Verifikasi
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _verifyOTP,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
+                        child: const Icon(Icons.mark_email_read_rounded,
+                            color: AppTheme.coral, size: 48),
                       ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              "Verifikasi",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Poppins',
+
+                      const SizedBox(height: 24),
+
+                      Text("Verifikasi Email", style: AppTheme.h2),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Masukkan kode 6 digit yang telah dikirim ke",
+                        textAlign: TextAlign.center,
+                        style: AppTheme.body,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.email,
+                        textAlign: TextAlign.center,
+                        style: AppTheme.bodyLarge.copyWith(
+                            color: AppTheme.coral,
+                            fontWeight: FontWeight.w600),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // OTP Input Fields
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: List.generate(6, (index) {
+                          return Container(
+                            width: 48,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: AppTheme.cloud,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: _focusNodes[index].hasFocus
+                                    ? AppTheme.coral
+                                    : Colors.transparent,
+                                width: 2,
                               ),
                             ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Resend OTP
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Tidak menerima kode? ",
-                        style: TextStyle(fontFamily: 'Poppins'),
+                            child: TextField(
+                              controller: _controllers[index],
+                              focusNode: _focusNodes[index],
+                              textAlign: TextAlign.center,
+                              keyboardType: TextInputType.number,
+                              maxLength: 1,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'Poppins',
+                                color: AppTheme.navy,
+                              ),
+                              decoration: const InputDecoration(
+                                counterText: "",
+                                border: InputBorder.none,
+                                contentPadding:
+                                    EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              onChanged: (value) {
+                                if (value.isNotEmpty && index < 5) {
+                                  _focusNodes[index + 1].requestFocus();
+                                } else if (value.isEmpty && index > 0) {
+                                  _focusNodes[index - 1].requestFocus();
+                                }
+                                setState(() {});
+                              },
+                            ),
+                          );
+                        }),
                       ),
-                      TextButton(
-                        onPressed: _canResend ? _resendOTP : null,
-                        child: Text(
-                          _canResend
-                              ? "Kirim Ulang"
-                              : "Kirim Ulang ($_countdown)",
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            color: _canResend ? Colors.red : Colors.grey,
-                            fontWeight: FontWeight.bold,
+
+                      const SizedBox(height: 32),
+
+                      // Verify button
+                      CoralButton(
+                        onPressed: _isLoading ? null : _verifyOTP,
+                        isLoading: _isLoading,
+                        child: const Text("Verifikasi"),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Resend OTP
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("Tidak menerima kode? ",
+                              style: AppTheme.body),
+                          GestureDetector(
+                            onTap: _canResend ? _resendOTP : null,
+                            child: Text(
+                              _canResend
+                                  ? "Kirim Ulang"
+                                  : "Kirim Ulang ($_countdown)",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _canResend
+                                    ? AppTheme.coral
+                                    : AppTheme.slate,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

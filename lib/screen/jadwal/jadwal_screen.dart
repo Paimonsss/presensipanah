@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:panah_presensi/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class JadwalScreen extends StatefulWidget {
   const JadwalScreen({super.key});
-
   @override
   State<JadwalScreen> createState() => _JadwalScreenState();
 }
@@ -15,48 +15,36 @@ class _JadwalScreenState extends State<JadwalScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchJadwal();
+    _fetch();
   }
 
-  Future<void> _fetchJadwal() async {
+  Future<void> _fetch() async {
     setState(() => _isLoading = true);
-
     try {
-      final response = await Supabase.instance.client
+      final r = await Supabase.instance.client
           .from('jadwal')
           .select('*')
           .order('date', ascending: true);
-
-      if (mounted) {
+      if (mounted)
         setState(() {
-          jadwalList = List<Map<String, dynamic>>.from(response);
+          jadwalList = List<Map<String, dynamic>>.from(r);
           _isLoading = false;
         });
-      }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Gagal memuat jadwal: $e")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Gagal memuat jadwal. Periksa koneksi internet Anda.")));
       }
     }
   }
 
-  String _formatDate(String? dateStr) {
-    if (dateStr == null) return "-";
+  String _fmtDate(String? d) {
+    if (d == null) return "-";
     try {
-      final date = DateTime.parse(dateStr);
-      const days = [
-        'Minggu',
-        'Senin',
-        'Selasa',
-        'Rabu',
-        'Kamis',
-        'Jumat',
-        'Sabtu',
-      ];
-      const months = [
+      final dt = DateTime.parse(d);
+      const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+      const mo = [
         'Jan',
         'Feb',
         'Mar',
@@ -68,34 +56,34 @@ class _JadwalScreenState extends State<JadwalScreen> {
         'Sep',
         'Okt',
         'Nov',
-        'Des',
+        'Des'
       ];
-      return "${days[date.weekday % 7]}, ${date.day} ${months[date.month - 1]} ${date.year}";
-    } catch (e) {
-      return dateStr;
+      return "${days[dt.weekday % 7]}, ${dt.day} ${mo[dt.month - 1]} ${dt.year}";
+    } catch (_) {
+      return d;
     }
   }
 
-  String _formatTime(String? startTime, String? endTime) {
-    if (startTime == null) return "-";
-    final start = startTime.substring(0, 5);
-    final end = endTime?.substring(0, 5) ?? "";
-    return end.isNotEmpty ? "$start - $end" : start;
+  String _fmtTime(String? s, String? e) {
+    if (s == null) return "-";
+    final a = s.substring(0, 5);
+    final b = e?.substring(0, 5) ?? "";
+    return b.isNotEmpty ? "$a - $b" : a;
   }
 
-  Color _getTypeColor(String? type) {
-    switch (type?.toLowerCase()) {
+  Color _typeColor(String? t) {
+    switch (t?.toLowerCase()) {
       case 'pertandingan':
-        return Colors.blue;
+        return AppTheme.info;
       case 'meeting':
-        return Colors.purple;
+        return const Color(0xFF7C4DFF);
       default:
-        return Colors.red;
+        return AppTheme.coral;
     }
   }
 
-  IconData _getTypeIcon(String? type) {
-    switch (type?.toLowerCase()) {
+  IconData _typeIcon(String? t) {
+    switch (t?.toLowerCase()) {
       case 'pertandingan':
         return Icons.emoji_events;
       case 'meeting':
@@ -108,227 +96,140 @@ class _JadwalScreenState extends State<JadwalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ===== HEADER MERAH LENGKUNG =====
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
+        child: SafeArea(
+          child: Column(children: [
+            // Top bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(children: [
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                          color: AppTheme.snow,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: AppTheme.ultraSoft),
+                      child: const Icon(Icons.arrow_back_rounded,
+                          color: AppTheme.navy, size: 22)),
                 ),
-              ),
-              padding: const EdgeInsets.only(
-                top: 40,
-                bottom: 40,
-                left: 20,
-                right: 20,
-              ),
-              child: Row(
-                children: [
-                  // Tombol Back
-                  InkWell(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        "JADWAL",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Refresh button
-                  InkWell(
-                    onTap: _fetchJadwal,
-                    child: const Icon(
-                      Icons.refresh,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ],
-              ),
+                const Spacer(),
+                Text("Jadwal", style: AppTheme.h3),
+                const Spacer(),
+                IconButton(
+                  onPressed: _fetch,
+                  icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                          color: AppTheme.snow,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: AppTheme.ultraSoft),
+                      child: const Icon(Icons.refresh_rounded,
+                          color: AppTheme.navy, size: 22)),
+                ),
+              ]),
             ),
+            const SizedBox(height: 16),
 
-            const SizedBox(height: 20),
-
-            // ===== LIST JADWAL =====
             Expanded(
               child: _isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(color: Colors.red),
-                    )
+                      child: CircularProgressIndicator(color: AppTheme.coral))
                   : jadwalList.isEmpty
                       ? Center(
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.calendar_today,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                              Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                      color: AppTheme.peach,
+                                      shape: BoxShape.circle),
+                                  child: const Icon(Icons.calendar_today,
+                                      size: 48, color: AppTheme.coral)),
                               const SizedBox(height: 16),
-                              Text(
-                                "Belum ada jadwal",
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 16,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
+                              Text("Belum ada jadwal",
+                                  style: AppTheme.bodyLarge),
+                            ]))
                       : RefreshIndicator(
-                          onRefresh: _fetchJadwal,
-                          color: Colors.red,
+                          onRefresh: _fetch,
+                          color: AppTheme.coral,
                           child: ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                             itemCount: jadwalList.length,
-                            itemBuilder: (context, index) {
-                              final item = jadwalList[index];
+                            itemBuilder: (context, i) {
+                              final item = jadwalList[i];
                               final type = item['type'] ?? 'Latihan';
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
+                              final color = _typeColor(type);
+                              return AccentCard(
+                                accentColor: color,
+                                child: Row(children: [
+                                  Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: _getTypeColor(type)
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        _getTypeIcon(type),
-                                        color: _getTypeColor(type),
-                                        size: 28,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
+                                          color: color.withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(14)),
+                                      child: Icon(_typeIcon(type),
+                                          color: color, size: 26)),
+                                  const SizedBox(width: 14),
+                                  Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  item["title"] ?? "-",
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontFamily: 'Poppins',
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: _getTypeColor(
-                                                    type,
-                                                  ).withOpacity(0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Text(
-                                                  type,
-                                                  style: TextStyle(
-                                                    fontSize: 12,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(children: [
+                                        Expanded(
+                                            child: Text(item["title"] ?? "-",
+                                                style: AppTheme.bodyLarge
+                                                    .copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: AppTheme.navy))),
+                                        Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 3),
+                                            decoration: BoxDecoration(
+                                                color: color.withValues(
+                                                    alpha: 0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(8)),
+                                            child: Text(type,
+                                                style: TextStyle(
+                                                    fontSize: 11,
                                                     fontWeight: FontWeight.w600,
                                                     fontFamily: 'Poppins',
-                                                    color: _getTypeColor(type),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            _formatDate(item["date"]),
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[700],
-                                              fontFamily: 'Poppins',
-                                            ),
-                                          ),
-                                          Text(
-                                            _formatTime(
-                                              item["time_start"],
-                                              item["time_end"],
-                                            ),
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: Colors.grey[600],
-                                              fontFamily: 'Poppins',
-                                            ),
-                                          ),
-                                          if (item["location"] != null)
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.location_on,
+                                                    color: color))),
+                                      ]),
+                                      const SizedBox(height: 4),
+                                      Text(_fmtDate(item["date"]),
+                                          style: AppTheme.body),
+                                      Text(
+                                          _fmtTime(item["time_start"],
+                                              item["time_end"]),
+                                          style: AppTheme.caption),
+                                      if (item["location"] != null)
+                                        Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 4),
+                                            child: Row(children: [
+                                              const Icon(Icons.location_on,
                                                   size: 14,
-                                                  color: Colors.grey[500],
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  item["location"],
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.grey[500],
-                                                    fontFamily: 'Poppins',
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                                  color: AppTheme.slate),
+                                              const SizedBox(width: 4),
+                                              Text(item["location"],
+                                                  style: AppTheme.caption),
+                                            ])),
+                                    ],
+                                  )),
+                                ]),
                               );
                             },
-                          ),
-                        ),
+                          )),
             ),
-          ],
+          ]),
         ),
       ),
     );

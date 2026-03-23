@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import 'package:panah_presensi/app_theme.dart';
 import 'package:panah_presensi/screen/dashboard/dashboard_screen.dart';
 import 'package:panah_presensi/screen/absensi/absensi_screen.dart';
 import 'package:panah_presensi/screen/profil/profil_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
-
   const MainScreen({super.key, this.initialIndex = 0});
 
   @override
@@ -29,93 +30,124 @@ class MainScreenState extends State<MainScreen> {
     super.dispose();
   }
 
-  /// Public method so child screens can switch tabs
   void switchToTab(int index) {
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOut,
-    );
+    _pageController.animateToPage(index,
+        duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
   }
 
-  void _onPageChanged(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  }
+  void _onPageChanged(int i) => setState(() => _currentIndex = i);
 
-  void _onBottomNavTapped(int index) {
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOut,
-    );
+  void _onTap(int i) {
+    _pageController.animateToPage(i,
+        duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: _onPageChanged,
-        physics: const BouncingScrollPhysics(),
+      body: Stack(
         children: [
-          const DashboardScreen(),
-          AbsensiScreen(),
-          const ProfilScreen(),
-        ],
-      ),
-
-      // ===== BOTTOM NAVIGATION BAR =====
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onBottomNavTapped,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.red,
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
+          PageView(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            physics: const BouncingScrollPhysics(),
+            children: [
+              const DashboardScreen(),
+              AbsensiScreen(),
+              const ProfilScreen(),
+            ],
           ),
-          unselectedLabelStyle: const TextStyle(fontFamily: 'Poppins'),
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Image.asset(
-                  'assets/image/logo.png',
-                  width: 28,
-                  height: 28,
+          // ═══ FLOATING PILL NAV ═══
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(context).padding.bottom + 12,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(40),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.snow.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(40),
+                    boxShadow: AppTheme.navShadow,
+                    border: Border.all(
+                      color: AppTheme.slate.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _navItem(
+                          Icons.home_outlined, Icons.home_rounded, "Home", 0),
+                      _centerNavItem(),
+                      _navItem(Icons.person_outline_rounded,
+                          Icons.person_rounded, "Profil", 2),
+                    ],
+                  ),
                 ),
               ),
-              label: 'Presensi',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
-            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _navItem(IconData icon, IconData activeIcon, String label, int index) {
+    final active = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => _onTap(index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: active
+              ? AppTheme.coral.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(active ? activeIcon : icon,
+                color: active ? AppTheme.coral : AppTheme.slate, size: 22),
+            if (active) ...[
+              const SizedBox(width: 6),
+              Text(label,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.coral,
+                  )),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _centerNavItem() {
+    final active = _currentIndex == 1;
+    return GestureDetector(
+      onTap: () => _onTap(1),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: active ? AppTheme.coralGradient : null,
+          color: active ? null : AppTheme.cloud,
+          shape: BoxShape.circle,
+          boxShadow: active ? AppTheme.coralGlow : null,
+        ),
+        child: Image.asset(
+          'assets/image/logo.png',
+          width: 32,
+          height: 32,
+          color: active ? Colors.white : AppTheme.slate,
+          colorBlendMode: BlendMode.srcATop,
         ),
       ),
     );

@@ -39,7 +39,7 @@ dependencies:
   shared_preferences: ^2.4.0
   supabase_flutter: ^2.9.1
   font_awesome_flutter: ^10.7.0
-  google_sign_in: ^6.2.1
+  google_sign_in: ^7.2.0
   image_picker: ^1.0.7
  
   
@@ -73,6 +73,7 @@ flutter:
   assets:
     - assets/image/logo.png
     - assets/image/logo2.json
+    - assets/image/archery.png
     - assets/logo1.gif 
  
   uses-material-design: true
