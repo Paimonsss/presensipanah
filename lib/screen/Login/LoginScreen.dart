@@ -52,16 +52,25 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
   }
 
+  static const String webClientId =
+      '229312233486-6jpl91rsehgg4ilkql2v3bqi7d3edje5.apps.googleusercontent.com';
+
   Future<void> signInWithGoogle() async {
     setState(() => _isGoogleLoading = true);
     try {
-      final googleUser = await GoogleSignIn.instance.authenticate();
+      final googleUser =
+          await GoogleSignIn(serverClientId: webClientId).signIn();
+      if (googleUser == null) {
+        setState(() => _isGoogleLoading = false);
+        return;
+      }
       final googleAuth = await googleUser.authentication;
       final idToken = googleAuth.idToken;
       if (idToken == null) throw Exception('Gagal mendapatkan ID Token');
       final response = await Supabase.instance.client.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
+        accessToken: googleAuth.accessToken,
       );
       if (response.session != null) {
         lightPushReplacement(context, const MainScreen());
