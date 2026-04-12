@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:panah_presensi/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:panah_presensi/screen/Login/LoginScreen.dart';
 import 'package:panah_presensi/utils/lightweight_route.dart';
 
@@ -80,15 +81,38 @@ class _ProfilScreenState extends State<ProfilScreen> {
   Future<void> _pickImage(ImageSource src) async {
     try {
       final f = await _picker.pickImage(
-          source: src, maxWidth: 512, maxHeight: 512, imageQuality: 80);
-      if (f != null) {
-        setState(() => _localPhoto = File(f.path));
-        _upload(f);
+          source: src, maxWidth: 1024, maxHeight: 1024, imageQuality: 90);
+      if (f == null) return;
+
+      // Crop the image
+      final cropped = await ImageCropper().cropImage(
+        sourcePath: f.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressQuality: 80,
+        maxWidth: 512,
+        maxHeight: 512,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Foto Profil',
+            toolbarColor: const Color(0xFF1B2838),
+            toolbarWidgetColor: Colors.white,
+            activeControlsWidgetColor: const Color(0xFFFF6B6B),
+            cropStyle: CropStyle.circle,
+            lockAspectRatio: true,
+          ),
+        ],
+      );
+
+      if (cropped != null) {
+        final croppedFile = XFile(cropped.path);
+        setState(() => _localPhoto = File(cropped.path));
+        _upload(croppedFile);
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text("Gagal memilih foto. Coba lagi.")));
+      }
     }
   }
 
@@ -97,7 +121,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
     try {
       final u = Supabase.instance.client.auth.currentUser;
       if (u == null) return;
-      final ext = photo.path.split('.').last;
+      // Force jpg extension — cropper may output unusual extensions
+      var ext = photo.path.split('.').last.toLowerCase();
+      if (!['jpg', 'jpeg', 'png', 'webp'].contains(ext)) ext = 'jpg';
       final name = '${u.id}/profile.$ext';
       await Supabase.instance.client.storage.from('avatars').uploadBinary(
           name, await photo.readAsBytes(),
@@ -108,16 +134,17 @@ class _ProfilScreenState extends State<ProfilScreen> {
           .from('anggota')
           .update({'photo_url': url}).eq('user_id', u.id);
       setState(() => _photoUrl = url);
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("Foto berhasil diperbarui!"),
             backgroundColor: AppTheme.success));
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("Gagal mengupload foto. Periksa koneksi internet Anda.")));
+            .showSnackBar(SnackBar(content: Text("Upload gagal: $e"), duration: const Duration(seconds: 8)));
+      }
     } finally {
-      setState(() => _uploading = false);
     }
   }
 
@@ -296,146 +323,154 @@ class _ProfilScreenState extends State<ProfilScreen> {
           child: _isLoading
               ? const Center(
                   child: CircularProgressIndicator(color: AppTheme.coral))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 100),
-                  child: Column(
-                    children: [
-                      // Top bar
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                        child: Row(children: [
-                          Container(
-                              padding: const EdgeInsets.all(4),
+              : Column(
+                  children: [
+                    // Top bar
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      child: Row(children: [
+                        Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                                color: AppTheme.coral.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12)),
+                            child: Image.asset('assets/image/logo.png',
+                                width: 36, height: 36)),
+                        const SizedBox(width: 12),
+                        Text("Profil",
+                            style: AppTheme.h3.copyWith(fontSize: 16)),
+                      ]),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Scrollable content area (fills remaining space)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 100),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Photo
+                            Stack(children: [
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: AppTheme.coralGradient),
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: const BoxDecoration(
+                                      color: AppTheme.cloud, shape: BoxShape.circle),
+                                  child: CircleAvatar(
+                                      radius: 48,
+                                      backgroundColor: AppTheme.cloud,
+                                      backgroundImage: img,
+                                      child: img == null
+                                          ? const Icon(Icons.person_rounded,
+                                              size: 56, color: AppTheme.slate)
+                                          : null),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: _uploading ? null : _showPhotoSheet,
+                                  child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                          gradient: AppTheme.coralGradient,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: AppTheme.cloud, width: 3)),
+                                      child: _uploading
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white))
+                                          : const Icon(Icons.camera_alt_rounded,
+                                              size: 16, color: Colors.white)),
+                                ),
+                              ),
+                            ]),
+                            const SizedBox(height: 12),
+                            Text(_nama, style: AppTheme.h2),
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 4),
                               decoration: BoxDecoration(
                                   color: AppTheme.coral.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12)),
-                              child: Image.asset('assets/image/logo.png',
-                                  width: 36, height: 36)),
-                          const SizedBox(width: 12),
-                          Text("Profil",
-                              style: AppTheme.h3.copyWith(fontSize: 16)),
-                        ]),
-                      ),
-                      const SizedBox(height: 28),
+                                  borderRadius: BorderRadius.circular(20)),
+                              child: Text("ID: $_userId",
+                                  style: AppTheme.caption.copyWith(
+                                      color: AppTheme.coral,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                            const SizedBox(height: 20),
 
-                      // Photo
-                      Stack(children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: AppTheme.coralGradient),
-                          child: Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                                color: AppTheme.cloud, shape: BoxShape.circle),
-                            child: CircleAvatar(
-                                radius: 56,
-                                backgroundColor: AppTheme.cloud,
-                                backgroundImage: img,
-                                child: img == null
-                                    ? const Icon(Icons.person_rounded,
-                                        size: 64, color: AppTheme.slate)
-                                    : null),
-                          ),
+                            // Info cards
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Column(children: [
+                                _infoTile(Icons.email_outlined, "Email", _email,
+                                    AppTheme.coral),
+                                _infoTile(Icons.calendar_today_outlined, "Bergabung",
+                                    _tglBergabung, AppTheme.teal),
+                              ]),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Actions
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Column(children: [
+                                CoralButton(
+                                    onPressed: _editName,
+                                    child: const Text("Edit Profil")),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton(
+                                        onPressed:
+                                            _uploading ? null : _showPhotoSheet,
+                                        style: OutlinedButton.styleFrom(
+                                            foregroundColor: AppTheme.navy,
+                                            side: BorderSide(
+                                                color: AppTheme.slate
+                                                    .withValues(alpha: 0.2)),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(28)),
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 14)),
+                                        child: Text(
+                                            _uploading
+                                                ? "Mengupload..."
+                                                : "Ganti Foto Profil",
+                                            style: AppTheme.bodyLarge
+                                                .copyWith(color: AppTheme.navy)))),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                    width: double.infinity,
+                                    child: TextButton(
+                                        onPressed: _logout,
+                                        style: TextButton.styleFrom(
+                                            foregroundColor: AppTheme.error,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 14)),
+                                        child: Text("Keluar",
+                                            style: AppTheme.button
+                                                .copyWith(color: AppTheme.error)))),
+                              ]),
+                            ),
+                          ],
                         ),
-                        Positioned(
-                          bottom: 4,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: _uploading ? null : _showPhotoSheet,
-                            child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                    gradient: AppTheme.coralGradient,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: AppTheme.cloud, width: 3)),
-                                child: _uploading
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white))
-                                    : const Icon(Icons.camera_alt_rounded,
-                                        size: 16, color: Colors.white)),
-                          ),
-                        ),
-                      ]),
-                      const SizedBox(height: 16),
-                      Text(_nama, style: AppTheme.h2),
-                      Container(
-                        margin: const EdgeInsets.only(top: 6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 4),
-                        decoration: BoxDecoration(
-                            color: AppTheme.coral.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20)),
-                        child: Text("ID: $_userId",
-                            style: AppTheme.caption.copyWith(
-                                color: AppTheme.coral,
-                                fontWeight: FontWeight.w600)),
                       ),
-                      const SizedBox(height: 28),
-
-                      // Info cards
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(children: [
-                          _infoTile(Icons.email_outlined, "Email", _email,
-                              AppTheme.coral),
-                          _infoTile(Icons.calendar_today_outlined, "Bergabung",
-                              _tglBergabung, AppTheme.teal),
-                        ]),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Actions
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(children: [
-                          CoralButton(
-                              onPressed: _editName,
-                              child: const Text("Edit Profil")),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                  onPressed:
-                                      _uploading ? null : _showPhotoSheet,
-                                  style: OutlinedButton.styleFrom(
-                                      foregroundColor: AppTheme.navy,
-                                      side: BorderSide(
-                                          color: AppTheme.slate
-                                              .withValues(alpha: 0.2)),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(28)),
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 14)),
-                                  child: Text(
-                                      _uploading
-                                          ? "Mengupload..."
-                                          : "Ganti Foto Profil",
-                                      style: AppTheme.bodyLarge
-                                          .copyWith(color: AppTheme.navy)))),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                              width: double.infinity,
-                              child: TextButton(
-                                  onPressed: _logout,
-                                  style: TextButton.styleFrom(
-                                      foregroundColor: AppTheme.error,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 14)),
-                                  child: Text("Keluar",
-                                      style: AppTheme.button
-                                          .copyWith(color: AppTheme.error)))),
-                        ]),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
         ),
       ),

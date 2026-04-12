@@ -3,8 +3,8 @@ import 'package:panah_presensi/app_theme.dart';
 import 'package:panah_presensi/screen/main_screen.dart';
 import 'package:panah_presensi/screen/register/register_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:panah_presensi/utils/lightweight_route.dart';
+import 'dart:async';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -17,6 +17,26 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _showPass = false;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+  StreamSubscription<AuthState>? _authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for auth state changes (from OAuth redirect)
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn && mounted) {
+        lightPushReplacement(context, const MainScreen());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> login() async {
     setState(() => _isLoading = true);
@@ -52,34 +72,15 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
   }
 
-  static const String webClientId =
-      '229312233486-6jpl91rsehgg4ilkql2v3bqi7d3edje5.apps.googleusercontent.com';
-
   Future<void> signInWithGoogle() async {
     setState(() => _isGoogleLoading = true);
     try {
-      final googleUser =
-          await GoogleSignIn(serverClientId: webClientId).signIn();
-      if (googleUser == null) {
-        setState(() => _isGoogleLoading = false);
-        return;
-      }
-      final googleAuth = await googleUser.authentication;
-      final idToken = googleAuth.idToken;
-      if (idToken == null) throw Exception('Gagal mendapatkan ID Token');
-      final response = await Supabase.instance.client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: googleAuth.accessToken,
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'com.panah.presensi://login-callback',
       );
-      if (response.session != null) {
-        lightPushReplacement(context, const MainScreen());
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login dengan Google gagal")),
-        );
-      }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Login Google gagal. Periksa koneksi internet Anda.")));
     }
@@ -212,8 +213,8 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(28, 0, 28, 32),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -229,9 +230,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: Image.asset('assets/image/logo.png',
-                            width: 100, height: 100, fit: BoxFit.contain),
+                            width: 80, height: 80, fit: BoxFit.contain),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Text("Selamat Datang! 👋", style: AppTheme.h1),
                       const SizedBox(height: 4),
                       Text("Masuk ke akun Panah Presensi",
@@ -239,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 28),
 
                 // Email
                 Text("Email",
@@ -257,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: AppTheme.coral, size: 20),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 // Password
                 Text("Kata Sandi",
@@ -292,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             AppTheme.caption.copyWith(color: AppTheme.coral)),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Login button
                 CoralButton(
@@ -300,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   isLoading: _isLoading,
                   child: const Text("Masuk"),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
                 // Divider
                 Row(children: [
@@ -316,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 1,
                           color: AppTheme.slate.withValues(alpha: 0.15))),
                 ]),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
                 // Google
                 SizedBox(
@@ -351,7 +352,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             AppTheme.bodyLarge.copyWith(color: AppTheme.navy)),
                   ),
                 ),
-                const SizedBox(height: 32),
+
+                const Spacer(),
 
                 // Register
                 Center(
@@ -371,7 +373,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     )),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
               ],
             ),
           ),
