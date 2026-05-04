@@ -82,6 +82,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final navBarBottom = MediaQuery.of(context).padding.bottom + 72;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -89,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: SafeArea(
           bottom: false,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 100),
+            padding: EdgeInsets.only(bottom: navBarBottom),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

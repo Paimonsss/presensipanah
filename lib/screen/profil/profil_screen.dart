@@ -314,6 +314,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
     else if (_photoUrl != null && _photoUrl!.isNotEmpty)
       img = NetworkImage(_photoUrl!);
 
+    // Dynamic bottom padding: system nav bar + floating nav height + gap
+    final navBarBottom = MediaQuery.of(context).padding.bottom + 72;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
@@ -327,7 +330,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                   children: [
                     // Top bar
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                       child: Row(children: [
                         Container(
                             padding: const EdgeInsets.all(4),
@@ -341,19 +344,18 @@ class _ProfilScreenState extends State<ProfilScreen> {
                             style: AppTheme.h3.copyWith(fontSize: 16)),
                       ]),
                     ),
-                    const SizedBox(height: 20),
 
-                    // Scrollable content area (fills remaining space)
+                    // Content area (fills remaining space)
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.only(bottom: 100),
+                        padding: EdgeInsets.only(bottom: navBarBottom),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // Photo
                             Stack(children: [
                               Container(
-                                padding: const EdgeInsets.all(4),
+                                padding: const EdgeInsets.all(3),
                                 decoration: const BoxDecoration(
                                     shape: BoxShape.circle,
                                     gradient: AppTheme.coralGradient),
@@ -362,54 +364,55 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                   decoration: const BoxDecoration(
                                       color: AppTheme.cloud, shape: BoxShape.circle),
                                   child: CircleAvatar(
-                                      radius: 48,
+                                      radius: 42,
                                       backgroundColor: AppTheme.cloud,
                                       backgroundImage: img,
                                       child: img == null
                                           ? const Icon(Icons.person_rounded,
-                                              size: 56, color: AppTheme.slate)
+                                              size: 48, color: AppTheme.slate)
                                           : null),
                                 ),
                               ),
                               Positioned(
-                                bottom: 4,
-                                right: 4,
+                                bottom: 2,
+                                right: 2,
                                 child: GestureDetector(
                                   onTap: _uploading ? null : _showPhotoSheet,
                                   child: Container(
-                                      padding: const EdgeInsets.all(8),
+                                      padding: const EdgeInsets.all(6),
                                       decoration: BoxDecoration(
                                           gradient: AppTheme.coralGradient,
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                              color: AppTheme.cloud, width: 3)),
+                                              color: AppTheme.cloud, width: 2)),
                                       child: _uploading
                                           ? const SizedBox(
-                                              width: 16,
-                                              height: 16,
+                                              width: 14,
+                                              height: 14,
                                               child: CircularProgressIndicator(
                                                   strokeWidth: 2,
                                                   color: Colors.white))
                                           : const Icon(Icons.camera_alt_rounded,
-                                              size: 16, color: Colors.white)),
+                                              size: 14, color: Colors.white)),
                                 ),
                               ),
                             ]),
-                            const SizedBox(height: 12),
-                            Text(_nama, style: AppTheme.h2),
+                            const SizedBox(height: 8),
+                            Text(_nama, style: AppTheme.h2.copyWith(fontSize: 20)),
                             Container(
                               margin: const EdgeInsets.only(top: 4),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 4),
+                                  horizontal: 12, vertical: 3),
                               decoration: BoxDecoration(
                                   color: AppTheme.coral.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(20)),
                               child: Text("ID: $_userId",
                                   style: AppTheme.caption.copyWith(
                                       color: AppTheme.coral,
-                                      fontWeight: FontWeight.w600)),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11)),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 14),
 
                             // Info cards
                             Padding(
@@ -421,7 +424,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                     _tglBergabung, AppTheme.teal),
                               ]),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 14),
 
                             // Actions
                             Padding(
@@ -430,7 +433,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                 CoralButton(
                                     onPressed: _editName,
                                     child: const Text("Edit Profil")),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 8),
                                 SizedBox(
                                     width: double.infinity,
                                     child: OutlinedButton(
@@ -445,14 +448,14 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                                 borderRadius:
                                                     BorderRadius.circular(28)),
                                             padding: const EdgeInsets.symmetric(
-                                                vertical: 14)),
+                                                vertical: 12)),
                                         child: Text(
                                             _uploading
                                                 ? "Mengupload..."
                                                 : "Ganti Foto Profil",
                                             style: AppTheme.bodyLarge
                                                 .copyWith(color: AppTheme.navy)))),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 8),
                                 SizedBox(
                                     width: double.infinity,
                                     child: TextButton(
@@ -460,7 +463,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                         style: TextButton.styleFrom(
                                             foregroundColor: AppTheme.error,
                                             padding: const EdgeInsets.symmetric(
-                                                vertical: 14)),
+                                                vertical: 10)),
                                         child: Text("Keluar",
                                             style: AppTheme.button
                                                 .copyWith(color: AppTheme.error)))),
